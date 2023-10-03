@@ -1,11 +1,11 @@
-# amd_epp_tool
+# amd_epp_tool AMD pstate CPU Performance Scaling
 
 This small tool is a simple CLI and TUI to configure the `scaling_governor` and `energy_performance_preference` settings 
 exposed in `sysfs` by the Linux `amd_pstate_epp` driver. It sets the same profile uniformly across all CPUs. 
 
 ![TUI example setting](tui.png) 
 
-## Usage:
+## Usage
 
 It has 4 commands, setting a configuration usually requires `root` level access, so either run with `sudo` or make the binary `setuid root`.
  (`sudo chown root amd-epp-tool; sudo chmod +s amd-epp-tool`)
@@ -26,6 +26,24 @@ Options:
   -V, --version  Print version
 ```
 
+## Installation
+
+### Linux
+
+The latest release can be "installed" by placing it in your user path `$HOME/.local/bin/` as such:
+
+```bash
+curl -L https://github.com/jayv/amd-epp-tool/releases/latest/\
+download/amd-epp-tool-x86_64-unknown-linux-gnu.tar.gz | tar zxv -C $HOME/.local/bin/
+
+# make it setuid root to change settings (optional) 
+sudo chown root $HOME/.local/bin/amd-epp-tool
+sudo chmod +s $HOME/.local/bin/amd-epp-tool
+```
+### Other Operating Systems
+
+This tool is only for the Linux `amd_pstate_epp` driver, sorry.
+
 ## Gotchas
 
 This tool is built specifically to work with the `amd_pstate_epp` driver, which was introduced in Linux 6.3 or available as a patch against 5.x if you compiled your own kernel.
@@ -41,4 +59,4 @@ The tool doesn't prevent partial updates. If it fails to apply a setting, which 
 
 ## References
 
-[Linux Guide amd-pstate](https://docs.kernel.org/admin-guide/pm/amd-pstate.html) 
+[Linux amd-pstate CPU Performance Scaling](https://docs.kernel.org/admin-guide/pm/amd-pstate.html) 
