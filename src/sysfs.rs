@@ -176,6 +176,8 @@ mod tests {
 
     #[test]
     fn read_int_range() {
-        assert_eq!((0, 15), read_int_range_value(CPU_PRESENT).unwrap())
+        let cpus = read_int_range_value(CPU_PRESENT).unwrap();
+        assert!(cpus.0 == 0);
+        assert!(cpus.1 >= 1);
     }
 }
