@@ -1,0 +1,31 @@
+[package]
+name = "amd-epp-tool"
+authors = ["Jo Voordeckers <jo.voordeckers@gmail.com>"]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+license-file = "LICENSE.txt"
+
+[profile.release]
+strip = true      # Automatically strip symbols from the binary.
+lto = true        # Link-time optimization.
+opt-level = 3     # Optimization level 3.
+codegen-units = 1 # Maximum size reduction optimizations.
+
+[profile.size]
+inherits = "release"
+opt-level = "s"      # Optimize for size.
+
+[profile.profile]
+inherits = "release"
+strip = false
+
+[dependencies]
+clap = { version = "4.4", features = ["derive", "color"] }
+cliclack = "0.1.8"
+strum = "0.25"
+strum_macros = "0.25"
+console = "0.15"
+simple-error = "0.3"
+ctrlc = "3.4"
+anyhow = "1.0"

@@ -1,0 +1,181 @@
+use anyhow::bail;
+use std::{
+    fs::OpenOptions,
+    io::{Error, ErrorKind},
+    vec::Vec,
+};
+
+use crate::model::AllowedValues;
+use crate::{
+    model::{CpuId, EnergyPerformancePreference, ScalingGovernor},
+    sysfs,
+};
+
+pub(crate) const AMD_PSTATE: &str = "/sys/devices/system/cpu/amd_pstate/status";
+
+pub(crate) const CPU_PRESENT: &str = "/sys/devices/system/cpu/present";
+
+pub(crate) const SCALING_GETSET: &str = "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_governor";
+pub(crate) const SCALING_AVAIL: &str =
+    "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_available_governors";
+
+pub(crate) const EPP_GETSET: &str =
+    "/sys/devices/system/cpu/cpu{}/cpufreq/energy_performance_preference";
+pub(crate) const EPP_AVAIL: &str =
+    "/sys/devices/system/cpu/cpu{}/cpufreq/energy_performance_available_preferences";
+
+impl AllowedValues for ScalingGovernor {
+    fn all() -> Vec<std::string::String> {
+        let cpu = first_cpu();
+        read_string_list_value(&cpu.path_for(SCALING_AVAIL)).unwrap_or(vec![])
+    }
+
+    fn new(value: std::string::String) -> anyhow::Result<Self> {
+        if ScalingGovernor::valid(&value) {
+            Ok(ScalingGovernor(value))
+        } else {
+            bail!("Unsupported value {value} for ScalingGovernor")
+        }
+    }
+}
+
+impl AllowedValues for EnergyPerformancePreference {
+    fn all() -> Vec<std::string::String> {
+        let cpu = first_cpu();
+        read_string_list_value(&cpu.path_for(EPP_AVAIL)).unwrap_or(vec![])
+    }
+
+    fn new(value: std::string::String) -> anyhow::Result<Self> {
+        if EnergyPerformancePreference::valid(&value) {
+            Ok(EnergyPerformancePreference(value))
+        } else {
+            bail!("Unsupported value {value} for EnergyPerformancePreference")
+        }
+    }
+}
+
+fn read_file(path: &str) -> std::io::Result<std::string::String> {
+    Ok(std::fs::read_to_string(path).unwrap().trim().to_owned())
+}
+
+fn write_file_string(path: &str, value: &str) -> std::io::Result<()> {
+    std::fs::write(path, value)
+}
+
+fn read_string_value(path: &str) -> std::io::Result<std::string::String> {
+    read_file(path)
+}
+
+fn read_string_list_value(path: &str) -> std::io::Result<Vec<std::string::String>> {
+    let value = read_string_value(path)?;
+    let values = value.split(' ').map(std::string::String::from).collect();
+    Ok(values)
+}
+
+fn read_int_range_value(path: &str) -> std::io::Result<(u8, u8)> {
+    if let Some((from, to)) = read_string_value(path)?.trim().split_once('-') {
+        return Ok((
+            str::parse::<u8>(from).unwrap(),
+            str::parse::<u8>(to).unwrap(),
+        ));
+    }
+    Err(Error::new(
+        ErrorKind::InvalidData,
+        format!("Not an int range under: {}", path),
+    ))
+}
+
+pub(crate) fn is_amd_pstate_enabled() -> bool {
+    let value = read_string_value(AMD_PSTATE).unwrap_or("n/a".to_owned());
+    value == "active"
+}
+
+fn first_cpu() -> CpuId {
+    let all_cpus = get_cpus().expect("List of CPUs expected");
+    let cpu = all_cpus
+        .first()
+        .expect("At least 1 CPU expected")
+        .to_owned();
+    cpu
+}
+
+pub(crate) fn is_governor_and_epp_writable() -> std::io::Result<bool> {
+    let cpu = first_cpu();
+
+    let path1 = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(cpu.path_for(SCALING_GETSET));
+
+    let path2 = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(cpu.path_for(EPP_GETSET));
+
+    if path1.is_ok() && path2.is_ok() {
+        return Ok(true);
+    }
+
+    Err(Error::new(
+        ErrorKind::PermissionDenied,
+        "Can't write settings, perhaps you need to be ROOT?",
+    ))
+}
+
+pub(crate) fn get_cpus() -> std::io::Result<Vec<CpuId>> {
+    let (from, to) = read_int_range_value(CPU_PRESENT)?;
+    Ok((from..to).map(CpuId).collect())
+}
+
+#[derive(Debug)]
+pub(crate) struct Configuration {
+    pub scaling_governor: ScalingGovernor,
+    pub epp_preference: EnergyPerformancePreference,
+}
+
+impl Configuration {
+    pub(crate) fn read() -> anyhow::Result<Self> {
+        let cpu = first_cpu();
+
+        let scaling_value = sysfs::read_string_value(&cpu.path_for(SCALING_GETSET))?;
+        let governor = ScalingGovernor::new(scaling_value)?;
+
+        let epp_value = sysfs::read_string_value(&cpu.path_for(EPP_GETSET))?;
+        let epp = EnergyPerformancePreference::new(epp_value)?;
+
+        Ok(Self {
+            scaling_governor: governor,
+            epp_preference: epp,
+        })
+    }
+
+    pub(crate) fn save(&self) -> std::io::Result<()> {
+        if !is_governor_and_epp_writable()? {
+            return Err(Error::new(
+                ErrorKind::PermissionDenied,
+                "No permission to update settings, perhaps you need to be ROOT",
+            ));
+        }
+        let all_cpu: Vec<CpuId> = get_cpus()?;
+        for cpu in all_cpu.iter() {
+            sysfs::write_file_string(&cpu.path_for(SCALING_GETSET), &self.scaling_governor.0)?;
+            sysfs::write_file_string(&cpu.path_for(EPP_GETSET), &self.epp_preference.0)?;
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_read_sysfs() {
+        assert!(read_file(CPU_PRESENT).unwrap().starts_with("0-"))
+    }
+
+    #[test]
+    fn read_int_range() {
+        assert_eq!((0, 15), read_int_range_value(CPU_PRESENT).unwrap())
+    }
+}
