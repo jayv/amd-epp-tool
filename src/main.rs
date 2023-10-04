@@ -1,13 +1,10 @@
 use anyhow::bail;
 use clap::{Parser, Subcommand};
-
 use console::style;
-use model::{EnergyPerformancePreference, ScalingGovernor};
+use model::{AllowedValues, EnergyPerformancePreference, ScalingGovernor};
 use sysfs::Configuration;
-
-use crate::model::AllowedValues;
-
 mod model;
+mod monitor;
 mod sysfs;
 
 #[derive(Parser)]
@@ -32,7 +29,7 @@ pub(crate) enum Commands {
         #[arg(short)]
         epp_preference: std::string::String,
     },
-    #[command(id = "mon", about = "monitor CPU speed")]
+    #[command(id = "mon", about = "CPU Frequency monitor graph")]
     Monitor,
 }
 
@@ -121,7 +118,7 @@ fn interactive_options(config: &Configuration) -> anyhow::Result<()> {
 
 fn main() -> anyhow::Result<()> {
     if !sysfs::is_amd_pstate_enabled() {
-        bail!("amd_pstate_epp kernel driver is not active or sysfs not accessible",);
+        bail!("`amd_pstate_epp` kernel driver is not in `active` mode or sysfs not accessible",);
     }
 
     let cfg = Configuration::read()?;
@@ -152,6 +149,6 @@ fn main() -> anyhow::Result<()> {
             }
             saved.map_err(anyhow::Error::from)
         }
-        Some(Commands::Monitor) => Ok(()),
+        Some(Commands::Monitor) => monitor::Monitor::start(),
     }
 }

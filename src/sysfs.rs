@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::{bail, Context};
 use std::{
     fs::OpenOptions,
     io::{Error, ErrorKind},
@@ -11,18 +11,20 @@ use crate::{
     sysfs,
 };
 
-pub(crate) const AMD_PSTATE: &str = "/sys/devices/system/cpu/amd_pstate/status";
+const AMD_PSTATE: &str = "/sys/devices/system/cpu/amd_pstate/status";
 
-pub(crate) const CPU_PRESENT: &str = "/sys/devices/system/cpu/present";
+const CPU_PRESENT: &str = "/sys/devices/system/cpu/present";
 
-pub(crate) const SCALING_GETSET: &str = "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_governor";
-pub(crate) const SCALING_AVAIL: &str =
-    "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_available_governors";
+const SCALING_GETSET: &str = "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_governor";
+const SCALING_AVAIL: &str = "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_available_governors";
 
-pub(crate) const EPP_GETSET: &str =
-    "/sys/devices/system/cpu/cpu{}/cpufreq/energy_performance_preference";
-pub(crate) const EPP_AVAIL: &str =
+const EPP_GETSET: &str = "/sys/devices/system/cpu/cpu{}/cpufreq/energy_performance_preference";
+const EPP_AVAIL: &str =
     "/sys/devices/system/cpu/cpu{}/cpufreq/energy_performance_available_preferences";
+
+pub(crate) const CPU_MIN_FREQ: &str = "/sys/devices/system/cpu/cpu{}/cpufreq/cpuinfo_min_freq";
+pub(crate) const CPU_MAX_FREQ: &str = "/sys/devices/system/cpu/cpu{}/cpufreq/cpuinfo_max_freq";
+pub(crate) const CPU_CUR_FREQ: &str = "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_cur_freq";
 
 impl AllowedValues for ScalingGovernor {
     fn all() -> Vec<std::string::String> {
@@ -55,7 +57,7 @@ impl AllowedValues for EnergyPerformancePreference {
 }
 
 fn read_file(path: &str) -> std::io::Result<std::string::String> {
-    Ok(std::fs::read_to_string(path).unwrap().trim().to_owned())
+    std::fs::read_to_string(path)
 }
 
 fn write_file_string(path: &str, value: &str) -> std::io::Result<()> {
@@ -63,7 +65,13 @@ fn write_file_string(path: &str, value: &str) -> std::io::Result<()> {
 }
 
 fn read_string_value(path: &str) -> std::io::Result<std::string::String> {
-    read_file(path)
+    read_file(path).map(|s| s.trim().to_owned())
+}
+
+pub(crate) fn read_int_value(path: &str) -> anyhow::Result<u32> {
+    (read_string_value(path)?)
+        .parse::<u32>()
+        .context("invalid int")
 }
 
 fn read_string_list_value(path: &str) -> std::io::Result<Vec<std::string::String>> {
@@ -73,7 +81,7 @@ fn read_string_list_value(path: &str) -> std::io::Result<Vec<std::string::String
 }
 
 fn read_int_range_value(path: &str) -> std::io::Result<(u8, u8)> {
-    if let Some((from, to)) = read_string_value(path)?.trim().split_once('-') {
+    if let Some((from, to)) = read_string_value(path)?.split_once('-') {
         return Ok((
             str::parse::<u8>(from).unwrap(),
             str::parse::<u8>(to).unwrap(),
