@@ -47,7 +47,6 @@ impl Monitor {
                 let mut new_data = vec![0u32; cpus.len()];
 
                 for cpu in cpus.iter() {
-                    // TODO: figure out how to handle failures in threads
                     let new_value = sysfs::read_int_value(&cpu.path_for(sysfs::CPU_CUR_FREQ))
                         .context("Failed to read current frequency")?;
                     new_data[cpu.0 as usize] = new_value;

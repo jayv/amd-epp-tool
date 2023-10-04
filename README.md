@@ -9,7 +9,7 @@ exposed in `sysfs` by the Linux `amd_pstate_epp` driver. It sets the same profil
 
 ## Usage
 
-It has 4 commands, not that making a configuration change requires `root` access.
+It has 4 commands, note that making a configuration change requires `root` access.
 
 ```
 Read or change the amd_pstate_epp kernel driver settings
@@ -32,7 +32,7 @@ Options:
 
 ### Linux
 
-The latest release can be "installed" by placing it in your user path `$HOME/.local/bin/` as such:
+The latest release can be "installed" by placing it in your user path `$HOME/.local/bin/` and made setuid root as such:
 
 ```bash
 curl -L https://github.com/jayv/amd-epp-tool/releases/latest/\
@@ -42,6 +42,14 @@ download/amd-epp-tool-x86_64-unknown-linux-gnu.tar.gz | tar zxv -C $HOME/.local/
 sudo chown root $HOME/.local/bin/amd-epp-tool
 sudo chmod +s $HOME/.local/bin/amd-epp-tool
 ```
+
+Alternative installation (global path, use `sudo` when changing settings):
+
+```bash
+curl -L https://github.com/jayv/amd-epp-tool/releases/latest/\
+download/amd-epp-tool-x86_64-unknown-linux-gnu.tar.gz | sudo tar zxv -C /usr/local/bin/
+```
+
 ### Other Operating Systems
 
 This tool is only for the Linux `amd_pstate_epp` driver, sorry.
