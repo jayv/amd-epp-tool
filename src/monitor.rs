@@ -119,7 +119,7 @@ impl Monitor {
                     .x_axis(Axis::default().bounds([0.0, f64::from(hist.history as u32)]))
                     .y_axis(
                         Axis::default()
-                            .title("Mhz")
+                            .title("GHz")
                             .bounds([min_value, max_value])
                             .labels(
                                 [min_value, mid_value, max_value]
