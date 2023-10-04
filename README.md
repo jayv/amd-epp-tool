@@ -73,4 +73,4 @@ The tool doesn't prevent partial updates. If it fails to apply a setting, which 
 
 - [Arch Linux CPU Frequency Scaling Wiki](https://wiki.archlinux.org/title/CPU_frequency_scaling) 
 
-
+- [Phoronix coverage of amd_pstate_epp](https://www.phoronix.com/review/amd-pstate-epp-ryzen-mobile) 
