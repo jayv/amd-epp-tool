@@ -126,9 +126,7 @@ fn main() -> anyhow::Result<()> {
     match Cli::parse().command {
         None | Some(Commands::UI) => {
             ctrlc::set_handler(|| ()).unwrap(); // without this, cliclack can't abort selection
-            let res = interactive_options(&cfg);
-            console::Term::stdout().show_cursor()?; // Ensure the cursor is back!
-            res
+            interactive_options(&cfg)
         }
         Some(Commands::Get) => get_config(&cfg),
         Some(Commands::Set {

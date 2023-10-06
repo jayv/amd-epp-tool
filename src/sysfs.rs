@@ -27,36 +27,36 @@ pub(crate) const CPU_MAX_FREQ: &str = "/sys/devices/system/cpu/cpu{}/cpufreq/cpu
 pub(crate) const CPU_CUR_FREQ: &str = "/sys/devices/system/cpu/cpu{}/cpufreq/scaling_cur_freq";
 
 impl AllowedValues for ScalingGovernor {
-    fn all() -> Vec<std::string::String> {
-        let cpu = first_cpu();
-        read_string_list_value(&cpu.path_for(SCALING_AVAIL)).unwrap_or(vec![])
-    }
-
-    fn new(value: std::string::String) -> anyhow::Result<Self> {
+    fn new(value: String) -> anyhow::Result<Self> {
         if ScalingGovernor::valid(&value) {
             Ok(ScalingGovernor(value))
         } else {
             bail!("Unsupported value {value} for ScalingGovernor")
         }
     }
+
+    fn all() -> Vec<String> {
+        let cpu = first_cpu();
+        read_string_list_value(&cpu.path_for(SCALING_AVAIL)).unwrap_or(vec![])
+    }
 }
 
 impl AllowedValues for EnergyPerformancePreference {
-    fn all() -> Vec<std::string::String> {
-        let cpu = first_cpu();
-        read_string_list_value(&cpu.path_for(EPP_AVAIL)).unwrap_or(vec![])
-    }
-
-    fn new(value: std::string::String) -> anyhow::Result<Self> {
+    fn new(value: String) -> anyhow::Result<Self> {
         if EnergyPerformancePreference::valid(&value) {
             Ok(EnergyPerformancePreference(value))
         } else {
             bail!("Unsupported value {value} for EnergyPerformancePreference")
         }
     }
+
+    fn all() -> Vec<String> {
+        let cpu = first_cpu();
+        read_string_list_value(&cpu.path_for(EPP_AVAIL)).unwrap_or(vec![])
+    }
 }
 
-fn read_file(path: &str) -> std::io::Result<std::string::String> {
+fn read_file(path: &str) -> std::io::Result<String> {
     std::fs::read_to_string(path)
 }
 
@@ -64,7 +64,7 @@ fn write_file_string(path: &str, value: &str) -> std::io::Result<()> {
     std::fs::write(path, value)
 }
 
-fn read_string_value(path: &str) -> std::io::Result<std::string::String> {
+fn read_string_value(path: &str) -> std::io::Result<String> {
     read_file(path).map(|s| s.trim().to_owned())
 }
 
@@ -74,9 +74,9 @@ pub(crate) fn read_int_value(path: &str) -> anyhow::Result<u32> {
         .context("invalid int")
 }
 
-fn read_string_list_value(path: &str) -> std::io::Result<Vec<std::string::String>> {
+fn read_string_list_value(path: &str) -> std::io::Result<Vec<String>> {
     let value = read_string_value(path)?;
-    let values = value.split(' ').map(std::string::String::from).collect();
+    let values = value.split(' ').map(String::from).collect();
     Ok(values)
 }
 
@@ -145,10 +145,10 @@ impl Configuration {
     pub(crate) fn read() -> anyhow::Result<Self> {
         let cpu = first_cpu();
 
-        let scaling_value = sysfs::read_string_value(&cpu.path_for(SCALING_GETSET))?;
+        let scaling_value = read_string_value(&cpu.path_for(SCALING_GETSET))?;
         let governor = ScalingGovernor::new(scaling_value)?;
 
-        let epp_value = sysfs::read_string_value(&cpu.path_for(EPP_GETSET))?;
+        let epp_value = read_string_value(&cpu.path_for(EPP_GETSET))?;
         let epp = EnergyPerformancePreference::new(epp_value)?;
 
         Ok(Self {
@@ -185,7 +185,7 @@ mod tests {
     #[test]
     fn read_int_range() {
         let cpus = read_int_range_value(CPU_PRESENT).unwrap();
-        assert!(cpus.0 == 0);
+        assert_eq!(cpus.0, 0);
         assert!(cpus.1 >= 1);
     }
 }

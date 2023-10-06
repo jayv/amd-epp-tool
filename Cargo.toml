@@ -22,7 +22,7 @@ strip = false
 
 [dependencies]
 clap = { version = "4.4", features = ["derive", "color"] }
-cliclack = "0.1.8"
+cliclack = "0.1.9"
 strum = "0.25"
 strum_macros = "0.25"
 console = "0.15"

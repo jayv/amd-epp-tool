@@ -144,9 +144,9 @@ checksum = "cd7cc57abe963c6d3b9d8be5b06ba7c8957a930305ca90304f24ef040aa6f961"
 
 [[package]]
 name = "cliclack"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b52ed9f37e4706d56b90845f0dd141022b3b7c9f8157b17b643fa37b654911c"
+checksum = "83e2594be9517a209974ddb026c1de599ad1447daf1db5b50fb0371f56fe71a2"
 dependencies = [
  "console",
  "indicatif",

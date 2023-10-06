@@ -107,7 +107,12 @@ impl Monitor {
 
             let min_value = f64::from(hist.min_value) / FREQ_SCALER;
             let max_value = f64::from(hist.max_value) / FREQ_SCALER;
-            let mid_value = (max_value - min_value) / 2.0;
+
+            let sub_range: f64 = (max_value - min_value) / 5.0;
+            let range:Vec<_> = (1..=5)
+                .map(|i| f64::from(i) * sub_range)
+                .map(|v| Span::from(format!("{:.1}", v)))
+                .collect();
 
             terminal.draw(|f| {
                 let chart = Chart::new(datasets)
@@ -121,13 +126,7 @@ impl Monitor {
                         Axis::default()
                             .title("GHz")
                             .bounds([min_value, max_value])
-                            .labels(
-                                [min_value, mid_value, max_value]
-                                    .iter()
-                                    .cloned()
-                                    .map(|v| Span::from(format!("{:.1}", v)))
-                                    .collect(),
-                            ),
+                            .labels(range),
                     );
 
                 f.render_widget(chart, f.size());
