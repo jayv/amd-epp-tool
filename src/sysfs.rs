@@ -132,7 +132,7 @@ pub(crate) fn is_governor_and_epp_writable() -> std::io::Result<bool> {
 
 pub(crate) fn get_cpus() -> std::io::Result<Vec<CpuId>> {
     let (from, to) = read_int_range_value(CPU_PRESENT)?;
-    Ok((from..to).map(CpuId).collect())
+    Ok((from..=to).map(CpuId).collect())
 }
 
 #[derive(Debug)]
