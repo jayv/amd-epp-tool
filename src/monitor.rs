@@ -5,15 +5,7 @@ use std::{
 };
 
 use anyhow::Context;
-use ratatui::{
-    prelude::CrosstermBackend,
-    style::Style,
-    symbols,
-    Terminal,
-    text::Span,
-    widgets::{Axis, Block, Borders, Dataset, GraphType},
-    widgets::Chart,
-};
+use ratatui::{prelude::CrosstermBackend, style::Style, symbols, Terminal, terminal, text::Span, widgets::{Axis, Block, Borders, Dataset, GraphType}, widgets::Chart};
 use ratatui::layout::Rect;
 use ratatui::widgets::{Paragraph, Wrap};
 
@@ -100,12 +92,19 @@ impl Monitor {
                 })
                 .collect();
 
-            let min_value = f64::from(hist.min_value) / FREQ_SCALER;
-            let max_value = f64::from(hist.max_value) / FREQ_SCALER;
+            let min_value = *numbers
+                .iter()
+                .map(|freq_hist| freq_hist.iter().map(|(_, freq)| freq).min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap())
+                .min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
 
-            let sub_range: f64 = (max_value - min_value) / 5.0;
-            let range: Vec<_> = (1..=5)
-                .map(|i| f64::from(i) * sub_range)
+            let max_value = *numbers
+                .iter()
+                .map(|freq_hist| freq_hist.iter().map(|(_, freq)| freq).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap())
+                .max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+
+            let sub_range: f64 = (max_value - min_value) / 4.0;
+            let range: Vec<_> = (0..=4)
+                .map(|i| min_value + f64::from(i) * sub_range)
                 .map(|v| Span::from(format!("{:.1}", v)))
                 .collect();
 
